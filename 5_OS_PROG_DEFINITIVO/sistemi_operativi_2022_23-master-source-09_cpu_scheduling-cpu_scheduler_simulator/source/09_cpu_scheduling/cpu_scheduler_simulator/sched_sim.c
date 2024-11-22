@@ -9,6 +9,7 @@ FakeOS os;
 void schedSJFPREEMPTIVE(FakeOS* os, void* args_){
   SchedSJFArgs* args=(SchedSJFArgs*)args_;
 
+  
   for(int i = 0; i < os->cpu_count; i++){
     //Se la cpu attuale non sta runnando vai alla cpu successiva
     if(os->cpus[i].running == 0){
@@ -70,6 +71,8 @@ void schedSJFPREEMPTIVE(FakeOS* os, void* args_){
         // Rimuovo il processo dalla ready e lo do alla cpu
         List_detach(&os->ready, (ListItem*)shortest_pcb);
         os->cpus[i].running = shortest_pcb;
+        os->cpus[i].contatore_quanto = args->quanto;
+
       }
 
     }
@@ -140,8 +143,6 @@ int main(int argc, char** argv) {
 
   int num_cpu = 1; // NUmero di defalut di cpu
   float alfa = 0.5; //valore di alfa di default
-
-
   int id_pos = 1; // Indice per valori che inserisco 
 
   while(id_pos < argc){
@@ -193,6 +194,7 @@ int main(int argc, char** argv) {
   // Imposto scheduler
   SchedSJFArgs ssjf_args;
   ssjf_args.alfa = alfa;
+  ssjf_args.quanto = 5;
   os.schedule_args = &ssjf_args;
   os.schedule_fn = schedSJFPREEMPTIVE;
 

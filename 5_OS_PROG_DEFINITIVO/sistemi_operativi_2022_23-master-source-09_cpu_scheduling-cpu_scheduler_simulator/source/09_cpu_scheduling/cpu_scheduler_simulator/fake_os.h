@@ -18,11 +18,12 @@ typedef void (*ScheduleFn)(struct FakeOS* os, void* args);
 
 typedef struct {
   float alfa;
+  int quanto;
 } SchedSJFArgs;
 
 typedef struct{
-  int id;
   FakePCB* running;
+  int contatore_quanto
 } Cpu; //ricordati che i nomi CPU e IO danno fastidio 
 
 

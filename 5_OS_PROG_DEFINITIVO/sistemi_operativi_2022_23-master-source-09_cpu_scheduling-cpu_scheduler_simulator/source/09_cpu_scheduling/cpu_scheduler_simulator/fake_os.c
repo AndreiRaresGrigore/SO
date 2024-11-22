@@ -8,8 +8,8 @@ void FakeOS_init(FakeOS* os, int cpu_count) {
   os->cpu_count = cpu_count;
   os->cpus = (Cpu*)malloc(sizeof(Cpu) * cpu_count);
   for(int i = 0; i < cpu_count; i++){
-    os->cpus[i].id = i;
     os->cpus[i].running = 0;
+    os->cpus[i].contatore_quanto = 0;
   }
   //os->running=0;
   List_init(&os->ready);
@@ -49,6 +49,7 @@ void FakeOS_createProcess(FakeOS* os, FakeProcess* p) {
   new_pcb->pid=p->pid;
   new_pcb->events=p->events;
   new_pcb->burst_stimato = 5; ////////IMPORTANTISSIMOOOOOOOOOO Valore iniziale per la stima del burst
+
 
   assert(new_pcb->events.first && "process without events");
 
@@ -126,6 +127,7 @@ void FakeOS_simStep(FakeOS* os){
         switch (e->type){
         case CPU:
           printf("\t\tmove to ready\n");
+          printf("\n\n\n////////////DA WAITING A READY////////\n\n\n");
           List_pushBack(&os->ready, (ListItem*) pcb);
           break;
         case IO:
@@ -155,6 +157,9 @@ void FakeOS_simStep(FakeOS* os){
       ProcessEvent* e = (ProcessEvent*) running->events.first;
       assert(e->type == CPU);
       e->duration --;
+      //decremento il contatore per il processo nella cpu
+      os->cpus[i].contatore_quanto--;
+      printf("\n////////////////////////////////////////////////QUANTO ---> %d\n", os->cpus[i].contatore_quanto);
       printf("\t\tremaining time on CPU %d: %d\n", i, e->duration); //Aggiunto i(CPU)
       if (e->duration == 0){
         printf("\t\tend burst on CPU %d\n", i); //Aggiunto i(CPU)
@@ -166,23 +171,34 @@ void FakeOS_simStep(FakeOS* os){
         List_popFront(&running->events);
         free(e);
         if (! running->events.first) {
+          printf("\n////////////FFFFFFFFFFFFFFFFF////////////\n");
+
           printf("\t\tend process pid %d on CPU %d\n", running->pid, i); //aggiunto testo pid
           free(running); // kill process
         } else {
           e=(ProcessEvent*) running->events.first;
           switch (e->type){
           case CPU:
+          printf("\n\n\n/////////////CASO CPU////////////////\n\n\n");
             printf("\t\tmove to ready pid %d\n", running->pid); //aggiunto testo pid
             List_pushBack(&os->ready, (ListItem*) running);
             break;
           case IO:
+          printf("\n\n\n/////////////CASO IO////////////////\n\n\n");
             printf("\t\tmove to waiting pid %d\n", running->pid); //aggiunto testo pid 
             List_pushBack(&os->waiting, (ListItem*) running);
             break;
           }
         }
         os->cpus[i].running = 0;//cambiato os->running con os->cpus[i].running
-      } else{
+      }
+      else if(os->cpus[i].contatore_quanto == 0){
+        printf("\n\nQUANTO A DISPOSIZIONE FINITO PER %d SULLA CPU %d\n\n", running->pid, i);
+        running->burst_corrente ++;
+        List_pushBack(&os->ready, (ListItem*)running);
+        os->cpus[i].running = 0;//processo tolto dai running
+      }
+      else{
         running->burst_corrente ++; ////////Aggiunto per incrementare durata il burst corrente se non è l'ultimo evento
       }
     }
