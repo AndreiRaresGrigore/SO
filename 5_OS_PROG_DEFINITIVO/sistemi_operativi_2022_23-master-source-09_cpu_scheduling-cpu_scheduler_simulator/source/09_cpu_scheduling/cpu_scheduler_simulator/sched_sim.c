@@ -6,6 +6,27 @@
 FakeOS os;
 
 
+FakePCB* trovo_corto(FakePCB* shortest_pcb, ListItem* prima_ready){
+  while(prima_ready){
+      FakePCB* pcb = (FakePCB*)prima_ready;
+      if(!shortest_pcb || pcb->burst_stimato < shortest_pcb->burst_stimato){
+        shortest_pcb = pcb;
+      }
+      prima_ready = prima_ready->next;
+    }
+    return shortest_pcb;
+}
+
+int verifica_running(sto_runnando){
+  for(int i = 0; i < os.cpu_count; i++){
+    if(os.cpus[i].running != 0){
+      sto_runnando = 1;
+      break;
+    }
+  }
+  return sto_runnando;
+}
+
 void schedSJFPREEMPTIVE(FakeOS* os, void* args_){
   SchedSJFArgs* args=(SchedSJFArgs*)args_;
 
@@ -21,14 +42,7 @@ void schedSJFPREEMPTIVE(FakeOS* os, void* args_){
 
     ListItem* prima_ready = os->ready.first;
 
-    while(prima_ready){
-
-      FakePCB* pcb = (FakePCB*)prima_ready;
-      if(!shortest_pcb || pcb->burst_stimato < shortest_pcb->burst_stimato){
-        shortest_pcb = pcb;
-      }
-      prima_ready = prima_ready->next;
-    }
+    shortest_pcb = trovo_corto(shortest_pcb, prima_ready);
 
     printf("Processo in esecuzione (pid %d) ----> burst_stimato: %f\n", running->pid, running->burst_stimato);
     if (shortest_pcb) {
@@ -59,14 +73,8 @@ void schedSJFPREEMPTIVE(FakeOS* os, void* args_){
 
       ListItem* prima_ready = os->ready.first;
 
-      while(prima_ready){
+      shortest_pcb = trovo_corto(shortest_pcb, prima_ready);
 
-        FakePCB* pcb = (FakePCB*)prima_ready;
-        if(!shortest_pcb || pcb->burst_stimato < shortest_pcb->burst_stimato){
-          shortest_pcb = pcb;
-        }
-        prima_ready = prima_ready->next;
-      }
       if (shortest_pcb) {
         // Rimuovo il processo dalla ready e lo do alla cpu
         List_detach(&os->ready, (ListItem*)shortest_pcb);
@@ -213,12 +221,7 @@ printf("num processes in queue %d\n", os.processes.size);
 
 //SERVE PER VEDERE SE DEVO EFFETTIVAMENTE ENTRARE NEL CICLO DEL WHILE 
   int sto_runnando = 0;
-  for(int i = 0; i < os.cpu_count; i++){
-    if(os.cpus[i].running != 0){
-      sto_runnando = 1;
-      break;
-    }
-  }
+  sto_runnando = verifica_running(sto_runnando);
 
   while(sto_runnando
         || os.ready.first
@@ -228,12 +231,7 @@ printf("num processes in queue %d\n", os.processes.size);
     
     //SERVE PER VEDERE SE HO ANCORA DEI RUNNING NELLE DIVERSE CPU 
     sto_runnando = 0;
-    for(int i = 0; i < os.cpu_count; i++){
-      if(os.cpus[i].running != 0){
-        sto_runnando = 1;
-        break;
-      }
-    }
+    sto_runnando = verifica_running(sto_runnando);
 
   }
 }
